@@ -1,0 +1,9 @@
+pandas
+aif360
+fastapi
+uvicorn
+python-multipart
+python-jose[cryptography]
+bcrypt
+python-dotenv
+google-genai

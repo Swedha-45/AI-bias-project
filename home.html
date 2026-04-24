@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI Bias Auditor | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.2), transparent 45%),
+                        radial-gradient(circle at 90% 75%, rgba(34, 211, 238, 0.15), transparent 50%),
+                        linear-gradient(135deg, #0a0f1c 0%, #0f172a 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Fixed Navbar - Glass Morphism */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(8, 12, 24, 0.94);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            z-index: 1100;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .navbar-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 28px;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(125deg, #a5f3fc, #818cf8);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .navbar-brand::before {
+            content: "⚖️";
+            font-size: 1.3rem;
+            background: none;
+            -webkit-background-clip: unset;
+            color: #38bdf8;
+        }
+
+        .navbar-menu {
+            display: flex;
+            list-style: none;
+            gap: 16px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 6px 16px;
+            border-radius: 40px;
+            transition: all 0.25s ease;
+            background: transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.25);
+            color: #ffffff;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(95deg, #4f46e5, #2563eb);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+        }
+
+        /* Main container - compact spacing */
+        .main-wrapper {
+            padding-top: 88px;
+            padding-bottom: 48px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 780px;
+            margin: 0 20px;
+        }
+
+        /* SMALLER CARD - reduced padding and compact */
+        .card {
+            background: rgba(18, 25, 45, 0.78);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
+            padding: 22px 28px;
+            transition: all 0.2s ease;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(125deg, #f0f9ff, #b9d0f0);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #9aa9c5;
+            font-size: 0.85rem;
+            border-left: 3px solid #4f46e5;
+            padding-left: 14px;
+            margin-bottom: 18px;
+            line-height: 1.4;
+        }
+
+        .hint {
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 16px;
+            padding: 10px 16px;
+            margin-bottom: 20px;
+            font-size: 0.75rem;
+            color: #cbd5e6;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        /* Upload Box - compact */
+        .upload-box {
+            background: rgba(2, 8, 23, 0.5);
+            border: 1.5px dashed rgba(56, 189, 248, 0.5);
+            border-radius: 20px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .upload-box:hover {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .upload-box input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .upload-box input[type="file"]::file-selector-button {
+            background: linear-gradient(95deg, #4f46e5, #3b82f6);
+            border: none;
+            padding: 6px 18px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.75rem;
+            margin-right: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .upload-box input[type="file"]::file-selector-button:hover {
+            background: linear-gradient(95deg, #6366f1, #2563eb);
+            transform: scale(1.01);
+        }
+
+        /* SMALLER BUTTON */
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(105deg, #4f46e5, #3b82f6);
+            border: none;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            margin-bottom: 0;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(105deg, #6366f1, #2563eb);
+            box-shadow: 0 8px 16px -6px #4f46e5;
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        /* RESULTS SECTION - Hidden by default, appears after audit */
+        .results-section {
+            display: none;
+            margin-top: 24px;
+            animation: fadeSlideUp 0.4s ease-out;
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mapping-badge {
+            background: rgba(34, 211, 238, 0.12);
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            color: #99b8e3;
+            text-align: center;
+            display: inline-block;
+            width: auto;
+            font-family: monospace;
+            margin-bottom: 16px;
+        }
+
+        .chart-wrapper {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 20px;
+            padding: 14px;
+            margin: 16px 0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        canvas {
+            max-height: 240px;
+            width: 100%;
+        }
+
+        .insight-card {
+            background: linear-gradient(115deg, rgba(56, 189, 248, 0.1), rgba(99, 102, 241, 0.08));
+            border-left: 4px solid #22d3ee;
+            border-radius: 18px;
+            padding: 14px 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .insight-card strong {
+            color: #7dd3fc;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .insight-text {
+            color: #e0edff;
+            line-height: 1.45;
+            margin-top: 6px;
+            font-size: 0.85rem;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.65rem;
+            color: #5f7396;
+        }
+
+        /* Loading spinner for button */
+        .loading-spinner-sm {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty state inside results */
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #7e8aa8;
+        }
+
+        @media (max-width: 620px) {
+            .card {
+                padding: 18px 20px;
+            }
+            .navbar-container {
+                padding: 0 16px;
+            }
+            h1 {
+                font-size: 1.35rem;
+            }
+            .subtitle {
+                font-size: 0.75rem;
+            }
+        }
+
+        html, body {
+            height: 100%;
+            background-attachment: fixed;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="navbar-brand">AI Bias Auditor</div>
+        <ul class="navbar-menu">
+            <li><a href="home.html" class="nav-link active">Home</a></li>
+            <li><a href="history.html" class="nav-link">History</a></li>
+            <li><a href="#" class="nav-link" id="logoutNavBtn">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="main-wrapper">
+    <div class="container">
+        <div class="card">
+            <h1>📊 Bias Audit Dashboard</h1>
+            <p class="subtitle">Upload dataset & run smart audit to detect bias in AI hiring models</p>
+            
+            <div class="hint">
+                ✨ Automatically detects bias across protected attributes like gender & age
+            </div>
+            
+            <div class="upload-box">
+                <input type="file" id="csvFile" accept=".csv">
+                <div style="font-size: 0.65rem; margin-top: 6px; color:#7e8aa8;">Supported: CSV with demographic & outcome columns</div>
+            </div>
+            
+            <button class="btn-primary" id="auditBtn">
+                🧠 Run Smart Audit
+            </button>
+            
+            <!-- RESULTS CONTAINER - hidden initially, appears only after audit -->
+            <div id="resultsContainer" class="results-section">
+                <div id="mappingInfo" style="text-align:center;"></div>
+                
+                <div class="chart-wrapper">
+                    <canvas id="biasChart"></canvas>
+                </div>
+                
+                <div id="insightBox" class="insight-card">
+                    <strong>🤖 AI Auditor Insight</strong>
+                    <div id="insightText" class="insight-text"></div>
+                </div>
+            </div>
+            
+            <div class="footer-note">
+                ⚡ Disparate Impact (DI) threshold: 0.8–1.25 indicates fairness
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let chartInstance = null;
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.href = "login.html";
+    }
+
+    const logoutNav = document.getElementById('logoutNavBtn');
+    if (logoutNav) {
+        logoutNav.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+    }
+
+    function showResults() {
+        const resultsDiv = document.getElementById('resultsContainer');
+        if (resultsDiv) {
+            resultsDiv.style.display = 'block';
+        }
+    }
+
+    function hideResults() {
+        const resultsDiv = document.getElementById('resultsContainer');
+        if (resultsDiv) {
+            resultsDiv.style.display = 'none';
+        }
+    }
+
+    function clearChart() {
+        const ctx = document.getElementById('biasChart').getContext('2d');
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
+    function selectChartMetrics(data) {
+        const preferredOrder = data.protected_attributes && data.protected_attributes.length
+            ? data.protected_attributes
+            : ['gender', 'age', 'location', 'degree', 'education', 'department', 'experience', 'race', 'ethnicity'];
+        const metrics = data.metrics || {};
+        const selectedKeys = preferredOrder.filter((key) => (
+            metrics[key] && typeof metrics[key].di !== 'undefined'
+        ));
+
+        if (selectedKeys.length > 0) {
+            return selectedKeys.slice(0, 6).map((key) => [key, metrics[key]]);
+        }
+
+        return Object.entries(metrics)
+            .filter(([, metric]) => metric && typeof metric.di !== 'undefined')
+            .slice(0, 6);
+    }
+
+    function renderResults(data) {
+        showResults();
+
+        const mappingDiv = document.getElementById('mappingInfo');
+        const insightBox = document.getElementById('insightBox');
+        const insightTextSpan = document.getElementById('insightText');
+        const ctx = document.getElementById('biasChart').getContext('2d');
+
+        if (data.mapped_columns) {
+            mappingDiv.innerHTML = `<div class="mapping-badge">Auto-Mapped: Gender -> ${data.mapped_columns.gender || '?'} | Age -> ${data.mapped_columns.age || '?'} | Hired -> ${data.mapped_columns.hired || '?'}</div>`;
+        } else {
+            mappingDiv.innerHTML = `<div class="mapping-badge">Mapped columns: ${JSON.stringify(data.mapped_columns || {})}</div>`;
+        }
+
+        insightBox.style.display = 'block';
+        insightTextSpan.innerText = data.insight || 'Audit complete. Review fairness metrics above.';
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        const metricEntries = selectChartMetrics(data);
+
+        if (metricEntries.length === 0) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            return;
+        }
+
+        const labels = metricEntries.map(([key]) => key.toUpperCase());
+        const diValues = metricEntries.map(([, metric]) => metric.di ?? 0);
+        const colors = ['#38bdf8', '#fbbf24', '#34d399', '#f472b6', '#a78bfa', '#fb7185'];
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Disparate Impact Score',
+                    data: diValues,
+                    backgroundColor: labels.map((_, index) => colors[index % colors.length]),
+                    borderRadius: 8,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                maintainAspectRatio: true,
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#cbd5e1', font: { size: 10 } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        titleColor: '#e2e8f0',
+                        callbacks: {
+                            label: (context) => `DI Score: ${context.raw}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        max: 1.5,
+                        beginAtZero: true,
+                        grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                        title: { display: true, text: 'Disparate Impact (DI)', color: '#94a3b8', font: { size: 10 } }
+                    },
+                    x: {
+                        ticks: { color: '#cbd5e6', font: { weight: 'bold', size: 11 } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    async function loadLatestAudit() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            return;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/history', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+            const latestAudit = data.history && data.history.length ? data.history[0] : null;
+            if (latestAudit) {
+                renderResults(latestAudit);
+            }
+        } catch (err) {
+            console.error('Could not load latest audit:', err);
+        }
+    }
+
+    async function audit() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        const fileInput = document.getElementById('csvFile');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showResults();
+            clearChart();
+            document.getElementById('insightBox').style.display = 'block';
+            document.getElementById('insightText').innerText = 'Please select a CSV file before running audit.';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        const auditBtn = document.getElementById('auditBtn');
+        const originalBtnText = auditBtn.innerHTML;
+        auditBtn.innerHTML = '<span class="loading-spinner-sm"></span> Analyzing...';
+        auditBtn.disabled = true;
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/audit', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail || 'Audit failed');
+            }
+
+            renderResults(data);
+        } catch (err) {
+            console.error('Audit error:', err);
+            showResults();
+            clearChart();
+            document.getElementById('insightBox').style.display = 'block';
+            document.getElementById('insightText').innerText = 'Audit failed. Please check file format or network connection.';
+        } finally {
+            auditBtn.innerHTML = originalBtnText;
+            auditBtn.disabled = false;
+        }
+    }
+
+    const auditButton = document.getElementById('auditBtn');
+    if (auditButton) {
+        const newAuditBtn = auditButton.cloneNode(true);
+        auditButton.parentNode.replaceChild(newAuditBtn, auditButton);
+        newAuditBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audit();
+        });
+        newAuditBtn.id = 'auditBtn';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        hideResults();
+
+        const mappingDiv = document.getElementById('mappingInfo');
+        if (mappingDiv) {
+            mappingDiv.innerHTML = '';
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log("Session: No token found");
+            return;
+        }
+
+        loadLatestAudit();
+    });
+
+    window.audit = audit;
+    window.logout = logout;
+</script>
+</body>
+</html>

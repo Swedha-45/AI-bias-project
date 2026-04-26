@@ -20,6 +20,8 @@ AI Bias Auditor is a FastAPI-based web app for uploading hiring datasets, checki
 - [history.html](/d:/Projects/AI-Bais/history.html) - audit history page
 - [chart.js](/d:/Projects/AI-Bais/chart.js) - local Chart.js bundle
 - [requirements.txt](/d:/Projects/AI-Bais/requirements.txt) - Python dependencies
+- [CSV_FORMAT.md](/d:/Projects/AI-Bais/CSV_FORMAT.md) - **CSV upload format and column requirements guide**
+- [CSV_TEMPLATE.csv](/d:/Projects/AI-Bais/CSV_TEMPLATE.csv) - **Template CSV file for data upload**
 
 ## Setup
 
@@ -50,6 +52,27 @@ python app.py
 - `history.html`
 
 The frontend is expected to run on `http://127.0.0.1:5500` and the backend on `http://127.0.0.1:8000`.
+
+## CSV Data Format
+
+Before uploading your hiring dataset, ensure it follows the required format:
+
+**Required Columns:**
+- `gender` - Employee gender (Male, Female, Non-binary, Other, etc.)
+- `age` - Employee age (numeric)
+- `hired` - Hiring decision (0 = not hired, 1 = hired)
+
+**Recommended Columns:**
+- `name` - Employee name (for reference)
+- `race` - Employee race/ethnicity
+- `education` - Education level (High School, Bachelor, Master, PhD)
+- `experience_years` - Years of professional experience
+- `test_score` - Standardized test score (0-100)
+- `interview_score` - Interview evaluation score (0-100)
+
+📋 **For detailed guidance, see [CSV_FORMAT.md](CSV_FORMAT.md)**
+
+📄 **Use [CSV_TEMPLATE.csv](CSV_TEMPLATE.csv) as a starting point for your data**
 
 ## Notes
 

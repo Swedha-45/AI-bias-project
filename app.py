@@ -191,6 +191,10 @@ def compute_group_fairness(attribute_series: pd.Series, target_series: pd.Series
     if len(group_stats) < 2:
         return None
 
+    total_selected = sum(g['selected_count'] for g in group_stats)
+    for g in group_stats:
+        g['proportion'] = sanitize_number(g['selected_count'] / total_selected) if total_selected > 0 else 0.0
+
     group_stats.sort(key=lambda item: (item['selection_rate'], item['count']))
     unprivileged = group_stats[0]
     privileged = group_stats[-1]
@@ -394,8 +398,13 @@ async def audit(file: UploadFile = File(...), token: str = Depends(oauth2_scheme
 
         # 3. Gemini Agent Insight
         prompt = (
-            f"Explain these HR bias metrics: {json.dumps(results['metrics'])}. "
-            "Identify the biggest risk, mention the most affected attribute, and give one practical fix in under 70 words."
+            f"Analyze the HR bias metrics from this hiring data audit: {json.dumps(results['metrics'])}. "
+            "Provide a detailed explanation for HR professionals on why this dataset shows bias. "
+            "For each protected attribute (gender, education, age, race, etc.), explain the disparities in hiring rates, "
+            "what the numbers mean (e.g., disparate impact, statistical parity difference), and the potential causes of bias. "
+            "Highlight the most biased categories and suggest specific actions to address the bias in hiring practices. "
+            "Focus on the data evidence, avoid generic advice, and explain implications for diversity and fairness. "
+            "Make it comprehensive but concise, around 250-300 words."
         )
         try:
             from google import genai

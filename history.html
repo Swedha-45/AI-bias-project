@@ -6,6 +6,7 @@
     <title>AI Bias Auditor | History</title>
     <script src="theme.js"></script>
     <script src="chart.js"></script>
+    <script>if (typeof Chart === 'undefined') { document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"><\/script>'); }</script>
     <style>
         :root {
             --body-bg: radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.2), transparent 45%),
@@ -378,6 +379,46 @@
             padding: 16px;
         }
 
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 24px 0 5px;
+        }
+
+        .pie-chart-wrapper {
+            background: var(--chart-bg);
+            border-radius: 24px;
+            padding: 16px;
+            position: relative;
+            min-height: 260px;
+            overflow: hidden;
+        }
+
+        .pie-chart-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: 220px !important;
+        }
+
+        .chart-fallback {
+            position: absolute;
+            inset: 0 0 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--metric-label);
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 16px;
+            background: rgba(15, 23, 42, 0.45);
+            pointer-events: none;
+        }
+
+        .chart-fallback.hidden {
+            display: none;
+        }
+
         canvas {
             max-height: 220px;
             width: 100%;
@@ -522,6 +563,19 @@
         };
     }
 
+    function hasChartGroups(metric) {
+        return metric && Array.isArray(metric.groups) && metric.groups.length > 0;
+    }
+
+    function hasFallbackChart(metric) {
+        return metric && typeof metric.privileged_rate !== 'undefined' && typeof metric.unprivileged_rate !== 'undefined' &&
+            typeof metric.privileged_group === 'string' && typeof metric.unprivileged_group === 'string';
+    }
+
+    function hasChartData(metric) {
+        return hasChartGroups(metric) || hasFallbackChart(metric);
+    }
+
     function selectChartAttributes(analysis) {
         const metrics = analysis.metrics || {};
         const preferredOrder = analysis.protected_attributes && analysis.protected_attributes.length
@@ -531,7 +585,8 @@
             isDisplayableAttribute(attr) &&
             metrics[attr] &&
             typeof metrics[attr].di !== 'undefined' &&
-            typeof metrics[attr].spd !== 'undefined'
+            typeof metrics[attr].spd !== 'undefined' &&
+            hasChartData(metrics[attr])
         ));
 
         if (selected.length > 0) {
@@ -543,7 +598,8 @@
                 isDisplayableAttribute(attr) &&
                 metrics[attr] &&
                 typeof metrics[attr].di !== 'undefined' &&
-                typeof metrics[attr].spd !== 'undefined'
+                typeof metrics[attr].spd !== 'undefined' &&
+                hasChartData(metrics[attr])
             ))
             .slice(0, 6);
     }
@@ -558,7 +614,8 @@
             isDisplayableAttribute(attr) &&
             metrics[attr] &&
             typeof metrics[attr].di !== 'undefined' &&
-            typeof metrics[attr].spd !== 'undefined'
+            typeof metrics[attr].spd !== 'undefined' &&
+            hasChartData(metrics[attr])
         ));
     }
 
@@ -627,35 +684,32 @@
                 const attributes = getDisplayAttributes(analysis);
                 const insightText = analysis.insight || 'Model fairness evaluation completed.';
 
-                let metricsCards = '';
-                const icons = {
-                    'gender': '⚧',
-                    'age': '📅',
-                    'location': '📍',
-                    'department': '🏢',
-                    'experience': '💼',
-                    'education': '🎓',
-                    'race': '🌍',
-                    'ethnicity': '👥'
-                };
+                let chartsHtml = '';
+                let chartCount = 0;
+                attributes.forEach((attr, attrIdx) => {
+                        const metric = analysis.metrics?.[attr];
+                    if (!hasChartData(metric)) {
+                        return;
+                    }
 
-                attributes.forEach(attr => {
-                    const metric = analysis.metrics?.[attr] || {};
-                    const di = metric.di ?? 'N/A';
-                    const spd = metric.spd ?? 'N/A';
-                    const icon = icons[attr] || '📊';
-                    
-                    metricsCards += `
-                        <div class="metric-card">
-                            <div class="metric-label">${icon} ${attr.charAt(0).toUpperCase() + attr.slice(1)} — Disparate Impact</div>
-                            <div class="metric-value">${di}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">${icon} ${attr.charAt(0).toUpperCase() + attr.slice(1)} — Statistical Parity Diff</div>
-                            <div class="metric-value">${spd}</div>
+                    chartCount += 1;
+                    const chartId = `chart-${idx}-${attrIdx}`;
+                    chartsHtml += `
+                        <div class="pie-chart-wrapper">
+                            <h4 style="text-align: center; margin-bottom: 8px; color: var(--text);">${attr.charAt(0).toUpperCase() + attr.slice(1)} Hiring Distribution</h4>
+                            <canvas id="${chartId}" width="300" height="200" style="max-height:200px; width:100%"></canvas>
+                            <div class="chart-fallback">Chart is loading...</div>
                         </div>
                     `;
                 });
+
+                if (chartCount === 0) {
+                    chartsHtml = `
+                        <div class="pie-chart-wrapper" style="grid-column: 1 / -1; padding: 32px 20px;">
+                            <p style="text-align:center; color: var(--metric-label);">No distribution chart is available for this audit. Run a fresh audit so the report can generate hiring-percentage pie charts.</p>
+                        </div>
+                    `;
+                }
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'analysis-item';
@@ -670,14 +724,11 @@
                         <button class="toggle-btn" data-details="${detailsId}" data-index="${idx}">🔍 View Report</button>
                     </div>
                     <div id="${detailsId}" class="analysis-details">
-                        <div class="metrics-grid">
-                            ${metricsCards}
-                        </div>
                         <div class="insight-box">
-                            <strong>🧠 AI Insight</strong><br>${escapeHtml(insightText)}
+                            <strong>🧠 Detailed Bias Analysis</strong><br>${escapeHtml(insightText)}
                         </div>
-                        <div class="chart-container">
-                            <canvas id="${chartId}" width="400" height="200" style="max-height:200px; width:100%"></canvas>
+                        <div class="charts-grid">
+                            ${chartsHtml}
                         </div>
                     </div>
                 `;
@@ -709,7 +760,7 @@
         const isNowVisible = !detailsDiv.classList.contains('show');
         detailsDiv.classList.toggle('show');
 
-        if (isNowVisible && !analysisCharts[index]) {
+        if (isNowVisible) {
             renderChartForIndex(index);
         }
     }
@@ -727,58 +778,113 @@
             if (!visibleHistory[index]) return;
 
             const analysis = visibleHistory[index];
-            const chartId = `chart-${index}`;
-            const canvasElem = document.getElementById(chartId);
-            if (!canvasElem) return;
-
-            const ctx = canvasElem.getContext('2d');
-            if (analysisCharts[index]) {
-                analysisCharts[index].destroy();
-            }
-
             const attributes = selectChartAttributes(analysis);
-            const labels = attributes.map(attr => attr.toUpperCase());
-            const diScores = attributes.map(attr => analysis.metrics?.[attr]?.di ?? 0);
-            const colors = ['#38bdf8', '#facc15', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
-            const backgroundColors = attributes.map((_, idx) => colors[idx % colors.length]);
             const themeColors = getChartThemeColors();
 
-            analysisCharts[index] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Disparate Impact Score',
-                        data: diScores,
-                        backgroundColor: backgroundColors,
-                        borderRadius: 8,
-                        barPercentage: 0.65
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: true,
-                    responsive: true,
-                    plugins: {
-                        legend: { labels: { color: themeColors.text, font: { size: 11 } } },
-                        tooltip: {
-                            backgroundColor: themeColors.tooltipBg,
-                            titleColor: themeColors.text,
-                            bodyColor: themeColors.text
-                        }
+            attributes.forEach((attr, attrIdx) => {
+                const chartId = `chart-${index}-${attrIdx}`;
+                const canvasElem = document.getElementById(chartId);
+                if (!canvasElem) return;
+
+                const wrapper = canvasElem.closest('.pie-chart-wrapper');
+                const fallback = wrapper ? wrapper.querySelector('.chart-fallback') : null;
+                if (fallback) {
+                    fallback.textContent = 'Preparing chart...';
+                    fallback.classList.remove('hidden');
+                }
+
+                const metric = analysis.metrics?.[attr];
+                let labels = [];
+                let dataValues = [];
+                const colors = ['#38bdf8', '#facc15', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
+
+                if (hasChartGroups(metric)) {
+                    const groups = metric.groups;
+                    labels = groups.map(g => g.group || 'Unknown');
+                    dataValues = groups.map(g => Number(g.proportion || 0) * 100);
+                } else if (hasFallbackChart(metric)) {
+                    labels = [metric.privileged_group, metric.unprivileged_group];
+                    dataValues = [Number(metric.privileged_rate || 0) * 100, Number(metric.unprivileged_rate || 0) * 100];
+                } else {
+                    if (fallback) {
+                        fallback.textContent = 'No distribution data available for this attribute.';
+                    }
+                    return;
+                }
+
+                const totalSelected = dataValues.reduce((sum, value) => sum + value, 0);
+                if (totalSelected <= 0) {
+                    if (fallback) {
+                        fallback.textContent = 'No hires were recorded for this audit, so chart distribution cannot be displayed.';
+                    }
+                    return;
+                }
+
+                if (typeof Chart === 'undefined') {
+                    if (fallback) {
+                        fallback.textContent = 'Chart.js is not loaded. Refresh the page.';
+                    }
+                    return;
+                }
+
+                const ctx = canvasElem.getContext('2d');
+                const chartKey = `${index}-${attr}`;
+                if (analysisCharts[chartKey]) {
+                    analysisCharts[chartKey].destroy();
+                }
+
+                const backgroundColors = labels.map((_, idx) => colors[idx % colors.length]);
+
+                analysisCharts[chartKey] = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 2,
+                            borderColor: 'rgba(255,255,255,0.8)'
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 1.5,
-                            grid: { color: 'rgba(148,163,184,0.2)' },
-                            ticks: { color: themeColors.text },
-                            title: { display: true, text: 'DI Score', color: themeColors.muted }
-                        },
-                        x: {
-                            ticks: { color: themeColors.text },
-                            grid: { display: false }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: themeColors.text,
+                                    font: { size: 11 },
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        return data.labels.map((label, i) => ({
+                                            text: `${label}: ${(data.datasets[0].data[i] || 0).toFixed(1)}%`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            strokeStyle: data.datasets[0].backgroundColor[i],
+                                            lineWidth: 2,
+                                            hidden: false,
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: themeColors.tooltipBg,
+                                titleColor: themeColors.text,
+                                bodyColor: themeColors.text,
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        return `${label}: ${value.toFixed(1)}% of hires`;
+                                    }
+                                }
+                            }
                         }
                     }
+                });
+
+                if (fallback) {
+                    fallback.classList.add('hidden');
                 }
             });
         } catch (err) {

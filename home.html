@@ -5,7 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AI Bias Auditor | Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="theme.js"></script>
     <style>
+        :root {
+            --body-bg: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.2), transparent 45%),
+                        radial-gradient(circle at 90% 75%, rgba(34, 211, 238, 0.15), transparent 50%),
+                        linear-gradient(135deg, #0a0f1c 0%, #0f172a 100%);
+            --body-text: #e2e8f0;
+            --navbar-bg: rgba(8, 12, 24, 0.94);
+            --navbar-border: rgba(148, 163, 184, 0.2);
+            --nav-text: #cbd5e1;
+            --nav-hover-bg: rgba(99, 102, 241, 0.25);
+            --brand-gradient: linear-gradient(125deg, #a5f3fc, #818cf8);
+            --title-gradient: linear-gradient(125deg, #f0f9ff, #b9d0f0);
+            --card-bg: rgba(18, 25, 45, 0.78);
+            --card-border: rgba(148, 163, 184, 0.28);
+            --subtitle-text: #9aa9c5;
+            --hint-bg: rgba(99, 102, 241, 0.1);
+            --hint-text: #cbd5e6;
+            --hint-border: rgba(99, 102, 241, 0.2);
+            --upload-bg: rgba(2, 8, 23, 0.5);
+            --upload-text: #e2e8f0;
+            --upload-border: rgba(56, 189, 248, 0.5);
+            --upload-hover-bg: rgba(56, 189, 248, 0.05);
+            --chart-bg: rgba(15, 23, 42, 0.6);
+            --chart-border: rgba(148, 163, 184, 0.2);
+            --insight-text: #e0edff;
+            --footer-note: #5f7396;
+            --muted-note: #7e8aa8;
+            --theme-toggle-bg: rgba(15, 23, 42, 0.78);
+            --theme-toggle-border: rgba(148, 163, 184, 0.22);
+            --theme-toggle-text: #e2e8f0;
+        }
+
+        [data-theme="light"] {
+            --body-bg: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1), transparent 45%),
+                        radial-gradient(circle at 90% 75%, rgba(34, 211, 238, 0.08), transparent 50%),
+                        linear-gradient(135deg, #f8fbff 0%, #e8eef9 100%);
+            --body-text: #0f172a;
+            --navbar-bg: rgba(255, 255, 255, 0.94);
+            --navbar-border: rgba(148, 163, 184, 0.25);
+            --nav-text: #334155;
+            --nav-hover-bg: rgba(99, 102, 241, 0.12);
+            --brand-gradient: linear-gradient(125deg, #0f172a, #2563eb);
+            --title-gradient: linear-gradient(125deg, #0f172a, #334155);
+            --card-bg: rgba(255, 255, 255, 0.82);
+            --card-border: rgba(148, 163, 184, 0.24);
+            --subtitle-text: #475569;
+            --hint-bg: rgba(99, 102, 241, 0.08);
+            --hint-text: #334155;
+            --hint-border: rgba(99, 102, 241, 0.16);
+            --upload-bg: rgba(248, 250, 252, 0.95);
+            --upload-text: #0f172a;
+            --upload-border: rgba(56, 189, 248, 0.45);
+            --upload-hover-bg: rgba(56, 189, 248, 0.08);
+            --chart-bg: rgba(248, 250, 252, 0.92);
+            --chart-border: rgba(148, 163, 184, 0.24);
+            --insight-text: #1e293b;
+            --footer-note: #64748b;
+            --muted-note: #64748b;
+            --theme-toggle-bg: rgba(255, 255, 255, 0.84);
+            --theme-toggle-border: rgba(148, 163, 184, 0.3);
+            --theme-toggle-text: #0f172a;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,10 +78,8 @@
         body {
             min-height: 100vh;
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.2), transparent 45%),
-                        radial-gradient(circle at 90% 75%, rgba(34, 211, 238, 0.15), transparent 50%),
-                        linear-gradient(135deg, #0a0f1c 0%, #0f172a 100%);
-            color: #e2e8f0;
+            background: var(--body-bg);
+            color: var(--body-text);
             overflow-x: hidden;
         }
 
@@ -29,9 +90,9 @@
             left: 0;
             right: 0;
             height: 64px;
-            background: rgba(8, 12, 24, 0.94);
+            background: var(--navbar-bg);
             backdrop-filter: blur(18px);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            border-bottom: 1px solid var(--navbar-border);
             z-index: 1100;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
@@ -49,7 +110,7 @@
         .navbar-brand {
             font-size: 1.25rem;
             font-weight: 700;
-            background: linear-gradient(125deg, #a5f3fc, #818cf8);
+            background: var(--brand-gradient);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
@@ -73,10 +134,11 @@
             gap: 16px;
             margin: 0;
             padding: 0;
+            align-items: center;
         }
 
         .nav-link {
-            color: #cbd5e1;
+            color: var(--nav-text);
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 500;
@@ -87,7 +149,7 @@
         }
 
         .nav-link:hover {
-            background: rgba(99, 102, 241, 0.25);
+            background: var(--nav-hover-bg);
             color: #ffffff;
         }
 
@@ -95,6 +157,23 @@
             background: linear-gradient(95deg, #4f46e5, #2563eb);
             color: white;
             box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+        }
+
+        .theme-toggle {
+            border: 1px solid var(--theme-toggle-border);
+            background: var(--theme-toggle-bg);
+            color: var(--theme-toggle-text);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(99, 102, 241, 0.22);
+            color: #ffffff;
         }
 
         /* Main container - compact spacing */
@@ -115,9 +194,9 @@
 
         /* SMALLER CARD - reduced padding and compact */
         .card {
-            background: rgba(18, 25, 45, 0.78);
+            background: var(--card-bg);
             backdrop-filter: blur(14px);
-            border: 1px solid rgba(148, 163, 184, 0.28);
+            border: 1px solid var(--card-border);
             border-radius: 28px;
             box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
             padding: 22px 28px;
@@ -128,7 +207,7 @@
             font-size: 1.6rem;
             font-weight: 700;
             letter-spacing: -0.3px;
-            background: linear-gradient(125deg, #f0f9ff, #b9d0f0);
+            background: var(--title-gradient);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
@@ -139,7 +218,7 @@
         }
 
         .subtitle {
-            color: #9aa9c5;
+            color: var(--subtitle-text);
             font-size: 0.85rem;
             border-left: 3px solid #4f46e5;
             padding-left: 14px;
@@ -148,19 +227,19 @@
         }
 
         .hint {
-            background: rgba(99, 102, 241, 0.1);
+            background: var(--hint-bg);
             border-radius: 16px;
             padding: 10px 16px;
             margin-bottom: 20px;
             font-size: 0.75rem;
-            color: #cbd5e6;
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--hint-text);
+            border: 1px solid var(--hint-border);
         }
 
         /* Upload Box - compact */
         .upload-box {
-            background: rgba(2, 8, 23, 0.5);
-            border: 1.5px dashed rgba(56, 189, 248, 0.5);
+            background: var(--upload-bg);
+            border: 1.5px dashed var(--upload-border);
             border-radius: 20px;
             padding: 12px 18px;
             margin-bottom: 18px;
@@ -170,13 +249,13 @@
 
         .upload-box:hover {
             border-color: #38bdf8;
-            background: rgba(56, 189, 248, 0.05);
+            background: var(--upload-hover-bg);
         }
 
         .upload-box input[type="file"] {
             width: 100%;
             padding: 8px;
-            color: #e2e8f0;
+            color: var(--upload-text);
             font-size: 0.85rem;
             cursor: pointer;
         }
@@ -258,11 +337,11 @@
         }
 
         .chart-wrapper {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--chart-bg);
             border-radius: 20px;
             padding: 14px;
             margin: 16px 0;
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--chart-border);
         }
 
         canvas {
@@ -286,7 +365,7 @@
         }
 
         .insight-text {
-            color: #e0edff;
+            color: var(--insight-text);
             line-height: 1.45;
             margin-top: 6px;
             font-size: 0.85rem;
@@ -296,7 +375,7 @@
             text-align: center;
             margin-top: 16px;
             font-size: 0.65rem;
-            color: #5f7396;
+            color: var(--footer-note);
         }
 
         /* Loading spinner for button */
@@ -321,7 +400,7 @@
         .empty-state {
             text-align: center;
             padding: 20px;
-            color: #7e8aa8;
+            color: var(--muted-note);
         }
 
         @media (max-width: 620px) {
@@ -353,6 +432,7 @@
         <ul class="navbar-menu">
             <li><a href="home.html" class="nav-link active">Home</a></li>
             <li><a href="history.html" class="nav-link">History</a></li>
+            <li><button type="button" class="theme-toggle" data-theme-toggle>Light mode</button></li>
             <li><a href="#" class="nav-link" id="logoutNavBtn">Logout</a></li>
         </ul>
     </div>
@@ -370,7 +450,7 @@
             
             <div class="upload-box">
                 <input type="file" id="csvFile" accept=".csv">
-                <div style="font-size: 0.65rem; margin-top: 6px; color:#7e8aa8;">Supported: CSV with demographic & outcome columns</div>
+                <div style="font-size: 0.65rem; margin-top: 6px; color:var(--muted-note);">Supported: CSV with demographic & outcome columns</div>
             </div>
             
             <button class="btn-primary" id="auditBtn">
@@ -400,6 +480,34 @@
 
 <script>
     let chartInstance = null;
+
+    function isDisplayableAttribute(attributeName) {
+        const blockedKeywords = [
+            'agegroup',
+            'stock', 'training', 'satisfaction', 'involvement', 'performance',
+            'relationship', 'worklife', 'overtime', 'travel', 'distance',
+            'income', 'rate', 'hike', 'standardhours', 'employeecount',
+            'employeenumber', 'yearswithcurrmanager', 'yearssincelastpromotion',
+            'yearsincurrentrole', 'yearsatcompany', 'totalworkingyears'
+        ];
+        const normalized = String(attributeName || '').toLowerCase();
+        return !blockedKeywords.some((keyword) => normalized.includes(keyword));
+    }
+
+    function hasMeaningfulMetrics(entry) {
+        const metrics = entry && entry.metrics ? Object.values(entry.metrics) : [];
+        if (metrics.length === 0) {
+            return false;
+        }
+
+        return metrics.some((metric) => {
+            if (!metric || typeof metric.di === 'undefined' || typeof metric.spd === 'undefined') {
+                return false;
+            }
+
+            return !(Number(metric.di) === 1 && Number(metric.spd) === 0);
+        });
+    }
 
     function logout() {
         localStorage.removeItem('token');
@@ -438,12 +546,15 @@
     }
 
     function selectChartMetrics(data) {
+        const metrics = data.metrics || {};
         const preferredOrder = data.protected_attributes && data.protected_attributes.length
             ? data.protected_attributes
-            : ['gender', 'age', 'location', 'degree', 'education', 'department', 'experience', 'race', 'ethnicity'];
-        const metrics = data.metrics || {};
+            : Object.keys(metrics);
         const selectedKeys = preferredOrder.filter((key) => (
-            metrics[key] && typeof metrics[key].di !== 'undefined'
+            isDisplayableAttribute(key) &&
+            metrics[key] &&
+            typeof metrics[key].di !== 'undefined' &&
+            typeof metrics[key].spd !== 'undefined'
         ));
 
         if (selectedKeys.length > 0) {
@@ -451,7 +562,12 @@
         }
 
         return Object.entries(metrics)
-            .filter(([, metric]) => metric && typeof metric.di !== 'undefined')
+            .filter(([key, metric]) => (
+                isDisplayableAttribute(key) &&
+                metric &&
+                typeof metric.di !== 'undefined' &&
+                typeof metric.spd !== 'undefined'
+            ))
             .slice(0, 6);
     }
 
@@ -547,7 +663,9 @@
             }
 
             const data = await response.json();
-            const latestAudit = data.history && data.history.length ? data.history[0] : null;
+            const latestAudit = data.history && data.history.length
+                ? (data.history.find(hasMeaningfulMetrics) || data.history[0])
+                : null;
             if (latestAudit) {
                 renderResults(latestAudit);
             }
@@ -617,6 +735,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+        initializeThemeToggle();
         hideResults();
 
         const mappingDiv = document.getElementById('mappingInfo');

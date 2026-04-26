@@ -4,8 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AI Bias Auditor | History</title>
+    <script src="theme.js"></script>
     <script src="chart.js"></script>
     <style>
+        :root {
+            --body-bg: radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.2), transparent 45%),
+                       radial-gradient(circle at 95% 80%, rgba(34, 211, 238, 0.18), transparent 50%),
+                       linear-gradient(145deg, #0a0f1c 0%, #0f172a 100%);
+            --text-main: #e2e8f0;
+            --navbar-bg: rgba(10, 15, 27, 0.92);
+            --navbar-border: rgba(148, 163, 184, 0.2);
+            --nav-text: #cbd5e1;
+            --nav-hover-bg: rgba(99, 102, 241, 0.25);
+            --card-bg: rgba(18, 25, 45, 0.75);
+            --card-border: rgba(148, 163, 184, 0.25);
+            --title-gradient: linear-gradient(120deg, #f0f9ff, #b9d0f0);
+            --subtitle-text: #94a3b8;
+            --state-bg: rgba(21, 31, 52, 0.7);
+            --state-border: rgba(99, 102, 241, 0.4);
+            --item-bg: rgba(15, 23, 42, 0.65);
+            --item-hover-bg: rgba(30, 41, 59, 0.85);
+            --item-border: rgba(148, 163, 184, 0.2);
+            --metric-bg: rgba(99, 102, 241, 0.12);
+            --metric-label: #9ca8c3;
+            --metric-value: #b9e2ff;
+            --insight-bg: rgba(56, 189, 248, 0.08);
+            --insight-text: #e0eaff;
+            --chart-bg: rgba(2, 8, 23, 0.5);
+            --footer-text: #5b6e8c;
+            --muted-text: #7e8aa8;
+            --theme-toggle-bg: rgba(15, 23, 42, 0.7);
+            --theme-toggle-border: rgba(148, 163, 184, 0.28);
+            --theme-toggle-text: #e2e8f0;
+        }
+
+        [data-theme="light"] {
+            --body-bg: radial-gradient(circle at 12% 18%, rgba(59, 130, 246, 0.14), transparent 42%),
+                       radial-gradient(circle at 88% 76%, rgba(14, 165, 233, 0.12), transparent 46%),
+                       linear-gradient(145deg, #f8fbff 0%, #e7eefb 100%);
+            --text-main: #0f172a;
+            --navbar-bg: rgba(255, 255, 255, 0.88);
+            --navbar-border: rgba(148, 163, 184, 0.28);
+            --nav-text: #334155;
+            --nav-hover-bg: rgba(99, 102, 241, 0.12);
+            --card-bg: rgba(255, 255, 255, 0.82);
+            --card-border: rgba(148, 163, 184, 0.24);
+            --title-gradient: linear-gradient(120deg, #0f172a, #2563eb);
+            --subtitle-text: #475569;
+            --state-bg: rgba(255, 255, 255, 0.72);
+            --state-border: rgba(59, 130, 246, 0.22);
+            --item-bg: rgba(255, 255, 255, 0.74);
+            --item-hover-bg: rgba(241, 245, 249, 0.95);
+            --item-border: rgba(148, 163, 184, 0.24);
+            --metric-bg: rgba(59, 130, 246, 0.08);
+            --metric-label: #475569;
+            --metric-value: #0f172a;
+            --insight-bg: rgba(56, 189, 248, 0.1);
+            --insight-text: #1e293b;
+            --chart-bg: rgba(255, 255, 255, 0.76);
+            --footer-text: #64748b;
+            --muted-text: #64748b;
+            --theme-toggle-bg: rgba(255, 255, 255, 0.76);
+            --theme-toggle-border: rgba(148, 163, 184, 0.3);
+            --theme-toggle-text: #0f172a;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,23 +78,21 @@
         body {
             min-height: 100vh;
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.2), transparent 45%),
-                        radial-gradient(circle at 95% 80%, rgba(34, 211, 238, 0.18), transparent 50%),
-                        linear-gradient(145deg, #0a0f1c 0%, #0f172a 100%);
-            color: #e2e8f0;
+            background: var(--body-bg);
+            color: var(--text-main);
             overflow-x: hidden;
+            transition: background 0.25s ease, color 0.25s ease;
         }
 
-        /* --- Elegant Navbar (glass, fixed, no white flash) --- */
         .navbar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             height: 70px;
-            background: rgba(10, 15, 27, 0.92);
+            background: var(--navbar-bg);
             backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            border-bottom: 1px solid var(--navbar-border);
             z-index: 1100;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
@@ -73,10 +134,11 @@
             gap: 20px;
             margin: 0;
             padding: 0;
+            align-items: center;
         }
 
         .nav-link {
-            color: #cbd5e1;
+            color: var(--nav-text);
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 500;
@@ -87,8 +149,25 @@
         }
 
         .nav-link:hover {
-            background: rgba(99, 102, 241, 0.25);
+            background: var(--nav-hover-bg);
             color: #f0f9ff;
+        }
+
+        .theme-toggle {
+            border: 1px solid var(--theme-toggle-border);
+            background: var(--theme-toggle-bg);
+            color: var(--theme-toggle-text);
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-1px);
         }
 
         .nav-link.active {
@@ -97,7 +176,6 @@
             box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
         }
 
-        /* main container — avoids white screen and ensures scroll works but looks contained */
         .main-wrap {
             padding-top: 100px;
             padding-bottom: 60px;
@@ -113,11 +191,10 @@
             margin: 0 24px;
         }
 
-        /* Modern glass card with depth */
         .card {
-            background: rgba(18, 25, 45, 0.75);
+            background: var(--card-bg);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(148, 163, 184, 0.25);
+            border: 1px solid var(--card-border);
             border-radius: 32px;
             box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.45);
             padding: 28px 32px;
@@ -128,7 +205,7 @@
             font-size: 1.8rem;
             font-weight: 600;
             letter-spacing: -0.3px;
-            background: linear-gradient(120deg, #f0f9ff, #b9d0f0);
+            background: var(--title-gradient);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
@@ -139,20 +216,19 @@
         }
 
         .subtitle {
-            color: #94a3b8;
+            color: var(--subtitle-text);
             font-size: 0.9rem;
             border-left: 2px solid #4f46e5;
             padding-left: 14px;
             margin-bottom: 28px;
         }
 
-        /* loading & empty states */
         .state-box {
-            background: rgba(21, 31, 52, 0.7);
+            background: var(--state-bg);
             border-radius: 24px;
             padding: 40px 24px;
             text-align: center;
-            border: 1px dashed rgba(99, 102, 241, 0.4);
+            border: 1px dashed var(--state-border);
             margin: 20px 0;
         }
 
@@ -171,11 +247,10 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* analysis items - beautiful and interactive */
         .analysis-item {
-            background: rgba(15, 23, 42, 0.65);
+            background: var(--item-bg);
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--item-border);
             border-radius: 24px;
             padding: 20px 24px;
             margin-bottom: 24px;
@@ -184,7 +259,7 @@
         }
 
         .analysis-item:hover {
-            background: rgba(30, 41, 59, 0.85);
+            background: var(--item-hover-bg);
             border-color: rgba(99, 102, 241, 0.6);
             transform: translateY(-3px);
             box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.4);
@@ -209,7 +284,7 @@
         }
 
         .analysis-date {
-            color: #7e8aa8;
+            color: var(--muted-text);
             font-size: 0.75rem;
             font-weight: 500;
             background: rgba(0,0,0,0.3);
@@ -218,7 +293,6 @@
             letter-spacing: 0.2px;
         }
 
-        /* premium button */
         .toggle-btn {
             background: linear-gradient(95deg, #4f46e5, #3b82f6);
             border: none;
@@ -262,7 +336,7 @@
         }
 
         .metric-card {
-            background: rgba(99, 102, 241, 0.12);
+            background: var(--metric-bg);
             border-radius: 20px;
             padding: 14px 16px;
             border-left: 3px solid #38bdf8;
@@ -270,7 +344,7 @@
         }
 
         .metric-label {
-            color: #9ca8c3;
+            color: var(--metric-label);
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.8px;
@@ -278,28 +352,28 @@
         }
 
         .metric-value {
-            color: #b9e2ff;
+            color: var(--metric-value);
             font-size: 1.5rem;
             font-weight: 700;
             word-break: break-word;
         }
 
         .insight-box {
-            background: rgba(56, 189, 248, 0.08);
+            background: var(--insight-bg);
             border-left: 4px solid #22d3ee;
             padding: 14px 20px;
             border-radius: 20px;
             margin: 20px 0;
             font-size: 0.85rem;
             line-height: 1.45;
-            color: #e0eaff;
+            color: var(--insight-text);
         }
 
         .chart-container {
             position: relative;
             height: 260px;
             margin: 24px 0 5px;
-            background: rgba(2, 8, 23, 0.5);
+            background: var(--chart-bg);
             border-radius: 24px;
             padding: 16px;
         }
@@ -309,12 +383,11 @@
             width: 100%;
         }
 
-        /* footer note */
         .footer-note {
             margin-top: 20px;
             text-align: center;
             font-size: 0.7rem;
-            color: #5b6e8c;
+            color: var(--footer-text);
         }
 
         @media (max-width: 680px) {
@@ -340,7 +413,6 @@
             }
         }
 
-        /* no white screen guarantee: body background fills entire view */
         html, body {
             height: 100%;
             background-attachment: fixed;
@@ -355,6 +427,7 @@
         <ul class="navbar-menu">
             <li><a href="home.html" class="nav-link">Home</a></li>
             <li><a href="history.html" class="nav-link active">History</a></li>
+            <li><button type="button" class="theme-toggle" data-theme-toggle>Light mode</button></li>
             <li><a href="#" class="nav-link" id="logoutBtn">Logout</a></li>
         </ul>
     </div>
@@ -366,7 +439,6 @@
             <h1>📋 Analysis History</h1>
             <p class="subtitle">Review all previous fairness audits, bias metrics, and AI insights.</p>
             
-            <!-- Loading / Empty states with professional design -->
             <div id="loading" style="display:none;">
                 <div class="state-box">
                     <div class="spinner"></div>
@@ -393,17 +465,73 @@
 </div>
 
 <script>
-    // ---------- PRESERVE FULL FUNCTIONALITY ----------
-    // global chart storage to avoid duplication
     let analysisCharts = {};
 
+    function isDisplayableAttribute(attributeName) {
+        const blockedKeywords = [
+            'agegroup',
+            'stock', 'training', 'satisfaction', 'involvement', 'performance',
+            'relationship', 'worklife', 'overtime', 'travel', 'distance',
+            'income', 'rate', 'hike', 'standardhours', 'employeecount',
+            'employeenumber', 'yearswithcurrmanager', 'yearssincelastpromotion',
+            'yearsincurrentrole', 'yearsatcompany', 'totalworkingyears'
+        ];
+        const normalized = String(attributeName || '').toLowerCase();
+        return !blockedKeywords.some((keyword) => normalized.includes(keyword));
+    }
+
+    function formatAnalysisTimestamp(timestamp) {
+        if (!timestamp) {
+            return 'Unknown time';
+        }
+
+        let normalized = timestamp;
+        if (/^\d{4}-\d{2}-\d{2}T/.test(timestamp) && !timestamp.endsWith('Z') && !timestamp.match(/[+-]\d{2}:\d{2}$/)) {
+            normalized = `${timestamp}Z`;
+        }
+
+        const date = new Date(normalized);
+        if (Number.isNaN(date.getTime())) {
+            return timestamp;
+        }
+
+        return date.toLocaleString();
+    }
+
+    function hasMeaningfulMetrics(analysis) {
+        const metrics = analysis && analysis.metrics ? Object.values(analysis.metrics) : [];
+        if (metrics.length === 0) {
+            return false;
+        }
+
+        return metrics.some((metric) => {
+            if (!metric || typeof metric.di === 'undefined' || typeof metric.spd === 'undefined') {
+                return false;
+            }
+
+            return !(Number(metric.di) === 1 && Number(metric.spd) === 0);
+        });
+    }
+
+    function getChartThemeColors() {
+        const styles = getComputedStyle(document.documentElement);
+        return {
+            text: styles.getPropertyValue('--nav-text').trim() || '#cbd5e1',
+            muted: styles.getPropertyValue('--subtitle-text').trim() || '#94a3b8',
+            tooltipBg: document.documentElement.getAttribute('data-theme') === 'light' ? '#ffffff' : '#111827'
+        };
+    }
+
     function selectChartAttributes(analysis) {
+        const metrics = analysis.metrics || {};
         const preferredOrder = analysis.protected_attributes && analysis.protected_attributes.length
             ? analysis.protected_attributes
-            : ['gender', 'age', 'location', 'degree', 'education', 'department', 'experience', 'race', 'ethnicity'];
-        const metrics = analysis.metrics || {};
+            : Object.keys(metrics);
         const selected = preferredOrder.filter((attr) => (
-            metrics[attr] && typeof metrics[attr].di !== 'undefined'
+            isDisplayableAttribute(attr) &&
+            metrics[attr] &&
+            typeof metrics[attr].di !== 'undefined' &&
+            typeof metrics[attr].spd !== 'undefined'
         ));
 
         if (selected.length > 0) {
@@ -411,17 +539,34 @@
         }
 
         return Object.keys(metrics)
-            .filter((attr) => metrics[attr] && typeof metrics[attr].di !== 'undefined')
+            .filter((attr) => (
+                isDisplayableAttribute(attr) &&
+                metrics[attr] &&
+                typeof metrics[attr].di !== 'undefined' &&
+                typeof metrics[attr].spd !== 'undefined'
+            ))
             .slice(0, 6);
     }
 
-    // logout (exactly same behavior)
+    function getDisplayAttributes(analysis) {
+        const metrics = analysis.metrics || {};
+        const attributeOrder = analysis.protected_attributes && analysis.protected_attributes.length
+            ? analysis.protected_attributes
+            : Object.keys(metrics);
+
+        return attributeOrder.filter((attr) => (
+            isDisplayableAttribute(attr) &&
+            metrics[attr] &&
+            typeof metrics[attr].di !== 'undefined' &&
+            typeof metrics[attr].spd !== 'undefined'
+        ));
+    }
+
     function logout() {
         localStorage.removeItem('token');
         window.location.href = "login.html";
     }
 
-    // attach logout event safely
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
@@ -430,7 +575,6 @@
         });
     }
 
-    // loadHistory as original but enhanced UI without breaking anything
     async function loadHistory() {
         let token = localStorage.getItem('token');
         if (!token) {
@@ -443,7 +587,6 @@
         const historyContainer = document.getElementById('history-container');
         const analysesList = document.getElementById('analyses-list');
 
-        // show loading, hide others
         loadingDiv.style.display = 'block';
         noHistoryDiv.style.display = 'none';
         historyContainer.style.display = 'none';
@@ -457,28 +600,33 @@
             let data = await response.json();
             loadingDiv.style.display = 'none';
 
-            // handle empty history
-            if (!data.history || data.history.length === 0) {
+            const visibleHistory = (data.history || []).filter(hasMeaningfulMetrics);
+
+            if (visibleHistory.length === 0) {
                 noHistoryDiv.style.display = 'block';
+                noHistoryDiv.innerHTML = `
+                    <div class="state-box">
+                        <span style="font-size: 3rem; opacity: 0.7;">📭</span>
+                        <p style="margin-top: 12px; font-weight: 500;">No corrected analysis history yet.</p>
+                        <p style="font-size: 0.8rem; color: #8192b0;">Run a new audit from <strong>Home</strong> to see refreshed fairness metrics.</p>
+                    </div>
+                `;
                 historyContainer.style.display = 'none';
                 return;
             }
 
-            // display history
             historyContainer.style.display = 'block';
             noHistoryDiv.style.display = 'none';
             analysesList.innerHTML = '';
 
-            data.history.forEach((analysis, idx) => {
-                const timestamp = new Date(analysis.timestamp).toLocaleString();
+            visibleHistory.forEach((analysis, idx) => {
+                const timestamp = formatAnalysisTimestamp(analysis.timestamp);
                 const detailsId = `details-${idx}`;
                 const chartId = `chart-${idx}`;
 
-                // Get all analyzed attributes
-                const attributes = analysis.protected_attributes || ['gender', 'age'];
+                const attributes = getDisplayAttributes(analysis);
                 const insightText = analysis.insight || 'Model fairness evaluation completed.';
 
-                // Generate metrics cards dynamically
                 let metricsCards = '';
                 const icons = {
                     'gender': '⚧',
@@ -492,8 +640,9 @@
                 };
 
                 attributes.forEach(attr => {
-                    const di = analysis.metrics?.[attr]?.di ?? 'N/A';
-                    const spd = analysis.metrics?.[attr]?.spd ?? 'N/A';
+                    const metric = analysis.metrics?.[attr] || {};
+                    const di = metric.di ?? 'N/A';
+                    const spd = metric.spd ?? 'N/A';
                     const icon = icons[attr] || '📊';
                     
                     metricsCards += `
@@ -510,7 +659,6 @@
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'analysis-item';
-                // optional: attach click to toggle (also button works)
                 itemDiv.innerHTML = `
                     <div class="analysis-header">
                         <div>
@@ -536,7 +684,6 @@
 
                 analysesList.appendChild(itemDiv);
 
-                // attach toggle event to button (preserves original toggleAnalysis mechanism)
                 const btn = itemDiv.querySelector('.toggle-btn');
                 if (btn) {
                     btn.addEventListener('click', (e) => {
@@ -546,22 +693,15 @@
                         toggleAnalysis(dId, idxVal);
                     });
                 }
-                // also clicking on item header could toggle? not needed but preserves user exp (optional)
-                const headerDiv = itemDiv.querySelector('.analysis-header');
-                if (headerDiv && !headerDiv.querySelector('.toggle-btn')?.click) {
-                    // avoid double trigger but we keep only button.
-                }
             });
         } catch (err) {
             loadingDiv.style.display = 'none';
-            // show error gracefully but not white screen
             noHistoryDiv.style.display = 'block';
             noHistoryDiv.innerHTML = `<div class="state-box"><span>⚠️</span><p>Error loading history: ${err.message || 'network issue'}</p><button onclick="location.reload()" style="margin-top:12px; background:#4f46e5; border:none; padding:6px 18px; border-radius:30px; color:white;">Retry</button></div>`;
             console.error(err);
         }
     }
 
-    // toggleAnalysis + chart rendering (exact original logic, but uses fetched history once again)
     function toggleAnalysis(detailsId, index) {
         const detailsDiv = document.getElementById(detailsId);
         if (!detailsDiv) return;
@@ -569,7 +709,6 @@
         const isNowVisible = !detailsDiv.classList.contains('show');
         detailsDiv.classList.toggle('show');
 
-        // Chart rendering only when opening and chart not rendered yet
         if (isNowVisible && !analysisCharts[index]) {
             renderChartForIndex(index);
         }
@@ -584,27 +723,25 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
-            if (!data.history || !data.history[index]) return;
+            const visibleHistory = (data.history || []).filter(hasMeaningfulMetrics);
+            if (!visibleHistory[index]) return;
 
-            const analysis = data.history[index];
+            const analysis = visibleHistory[index];
             const chartId = `chart-${index}`;
             const canvasElem = document.getElementById(chartId);
             if (!canvasElem) return;
 
             const ctx = canvasElem.getContext('2d');
-            // prevent duplicate charts
             if (analysisCharts[index]) {
                 analysisCharts[index].destroy();
             }
 
-            // Get all analyzed attributes and their DI scores
             const attributes = selectChartAttributes(analysis);
             const labels = attributes.map(attr => attr.toUpperCase());
             const diScores = attributes.map(attr => analysis.metrics?.[attr]?.di ?? 0);
-            
-            // Generate colors for each attribute
             const colors = ['#38bdf8', '#facc15', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
             const backgroundColors = attributes.map((_, idx) => colors[idx % colors.length]);
+            const themeColors = getChartThemeColors();
 
             analysisCharts[index] = new Chart(ctx, {
                 type: 'bar',
@@ -622,18 +759,23 @@
                     maintainAspectRatio: true,
                     responsive: true,
                     plugins: {
-                        legend: { labels: { color: '#cbd5e1', font: { size: 11 } } },
-                        tooltip: { backgroundColor: '#111827', titleColor: '#e2e8f0' }
+                        legend: { labels: { color: themeColors.text, font: { size: 11 } } },
+                        tooltip: {
+                            backgroundColor: themeColors.tooltipBg,
+                            titleColor: themeColors.text,
+                            bodyColor: themeColors.text
+                        }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: 1.5,
                             grid: { color: 'rgba(148,163,184,0.2)' },
-                            title: { display: true, text: 'DI Score', color: '#94a3b8' }
+                            ticks: { color: themeColors.text },
+                            title: { display: true, text: 'DI Score', color: themeColors.muted }
                         },
                         x: {
-                            ticks: { color: '#cbd5e6' },
+                            ticks: { color: themeColors.text },
                             grid: { display: false }
                         }
                     }
@@ -644,7 +786,6 @@
         }
     }
 
-    // Helper to avoid XSS
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -657,11 +798,9 @@
         });
     }
 
-    // ensure navbar adjustment, no white flash: optional robust background
-    // load history on page load
     window.addEventListener('DOMContentLoaded', () => {
+        initializeThemeToggle();
         loadHistory();
-        // additional check: background fill for any scroll jerk? Already covered
         document.body.style.backgroundColor = 'transparent';
     });
 </script>

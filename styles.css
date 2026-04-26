@@ -1,15 +1,40 @@
 :root {
   --bg-1: #0f172a;
   --bg-2: #1e293b;
+  --body-bg:
+    radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.2), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.2), transparent 35%),
+    linear-gradient(140deg, var(--bg-1), var(--bg-2));
   --card: rgba(15, 23, 42, 0.72);
   --card-border: rgba(148, 163, 184, 0.25);
   --text: #e2e8f0;
   --muted: #94a3b8;
+  --label: #cbd5e1;
   --primary: #6366f1;
   --primary-hover: #4f46e5;
   --accent: #22d3ee;
   --danger: #ef4444;
   --shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+  --theme-toggle-bg: rgba(15, 23, 42, 0.72);
+  --theme-toggle-border: rgba(148, 163, 184, 0.28);
+  --theme-toggle-text: #e2e8f0;
+}
+
+[data-theme="light"] {
+  --bg-1: #f8fbff;
+  --bg-2: #e7eefb;
+  --body-bg:
+    radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.14), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.12), transparent 35%),
+    linear-gradient(140deg, var(--bg-1), var(--bg-2));
+  --card: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(148, 163, 184, 0.22);
+  --text: #0f172a;
+  --muted: #475569;
+  --label: #334155;
+  --theme-toggle-bg: rgba(255, 255, 255, 0.78);
+  --theme-toggle-border: rgba(148, 163, 184, 0.28);
+  --theme-toggle-text: #0f172a;
 }
 
 * {
@@ -21,11 +46,9 @@ body {
   min-height: 100vh;
   font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.2), transparent 35%),
-    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.2), transparent 35%),
-    linear-gradient(140deg, var(--bg-1), var(--bg-2));
+  background: var(--body-bg);
   padding-top: 70px;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 /* Navigation Bar Styles */
@@ -115,13 +138,21 @@ body {
   padding: 30px;
 }
 
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: 700;
   letter-spacing: 0.4px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .brand::before {
@@ -152,7 +183,7 @@ form {
   display: block;
   margin-bottom: 6px;
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: var(--label);
 }
 
 .field input[type="text"],
@@ -219,6 +250,23 @@ form {
   background: rgba(99, 102, 241, 0.25);
 }
 
+.theme-toggle {
+  border: 1px solid var(--theme-toggle-border);
+  border-radius: 999px;
+  background: var(--theme-toggle-bg);
+  color: var(--theme-toggle-text);
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+}
+
 .hint {
   margin-top: 14px;
   text-align: center;
@@ -236,5 +284,10 @@ form {
 @media (max-width: 520px) {
   .card {
     padding: 24px 18px;
+  }
+
+  .card-top {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

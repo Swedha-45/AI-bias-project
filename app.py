@@ -3,7 +3,7 @@ import io
 import math
 import os
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 import bcrypt
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
@@ -51,9 +51,15 @@ def init_database():
             metrics TEXT NOT NULL,
             insight TEXT NOT NULL,
             mapped_columns TEXT NOT NULL,
+            protected_attributes TEXT,
             FOREIGN KEY (username) REFERENCES users(username)
         )
     ''')
+
+    cursor.execute("PRAGMA table_info(analysis_history)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+    if 'protected_attributes' not in existing_columns:
+        cursor.execute("ALTER TABLE analysis_history ADD COLUMN protected_attributes TEXT")
     
     conn.commit()
     conn.close()
@@ -101,6 +107,112 @@ def sanitize_number(value: float, fallback: float = 0.0) -> float:
     return round(value, 3)
 
 
+def normalize_text_value(value) -> str:
+    if pd.isna(value):
+        return "Unknown"
+
+    text = str(value).strip()
+    if not text or text.lower() in {'nan', 'none', 'null'}:
+        return "Unknown"
+    return text
+
+
+def encode_target_value(value) -> int:
+    normalized = normalize_text_value(value).lower()
+    positive_values = {'1', 'true', 't', 'yes', 'y', 'hired', 'selected', 'accept', 'accepted', 'pass'}
+    negative_values = {'0', 'false', 'f', 'no', 'n', 'rejected', 'not hired', 'declined', 'fail'}
+
+    if normalized in positive_values:
+        return 1
+    if normalized in negative_values:
+        return 0
+
+    try:
+        return 1 if float(normalized) > 0 else 0
+    except ValueError:
+        return 0
+
+
+def prepare_comparable_attribute(series: pd.Series) -> pd.Series | None:
+    non_null = series.dropna()
+    if non_null.empty:
+        return None
+
+    numeric = pd.to_numeric(series, errors='coerce')
+    numeric_non_null = numeric.dropna()
+
+    if len(numeric_non_null) >= max(4, len(series) // 4):
+        unique_numeric = numeric_non_null.nunique()
+        if unique_numeric >= 4:
+            quantiles = min(4, unique_numeric)
+            try:
+                bucketed = pd.qcut(numeric.fillna(numeric.median()), q=quantiles, duplicates='drop')
+                labels = bucketed.astype(str).str.replace(', ', ' to ', regex=False)
+                labels = labels.str.replace('[', '', regex=False).str.replace(']', '', regex=False)
+                labels = labels.str.replace('(', '', regex=False)
+                return labels.fillna("Unknown")
+            except ValueError:
+                pass
+
+        median_val = numeric_non_null.median()
+        return numeric.fillna(median_val).apply(lambda x: f">= {round(median_val, 2)}" if x >= median_val else f"< {round(median_val, 2)}")
+
+    normalized = series.apply(normalize_text_value)
+    unique_count = normalized.nunique(dropna=True)
+    if 2 <= unique_count <= 10:
+        return normalized
+
+    return None
+
+
+def compute_group_fairness(attribute_series: pd.Series, target_series: pd.Series):
+    grouped = pd.DataFrame({
+        'attribute': attribute_series,
+        'target': target_series
+    }).dropna()
+
+    if grouped.empty:
+        return None
+
+    group_stats = []
+    for group_name, group_df in grouped.groupby('attribute'):
+        count = int(len(group_df))
+        if count == 0:
+            continue
+        selection_rate = float(group_df['target'].mean())
+        selected_count = int(group_df['target'].sum())
+        group_stats.append({
+            'group': str(group_name),
+            'count': count,
+            'selected_count': selected_count,
+            'selection_rate': sanitize_number(selection_rate)
+        })
+
+    if len(group_stats) < 2:
+        return None
+
+    group_stats.sort(key=lambda item: (item['selection_rate'], item['count']))
+    unprivileged = group_stats[0]
+    privileged = group_stats[-1]
+
+    priv_rate = privileged['selection_rate']
+    unpriv_rate = unprivileged['selection_rate']
+    di = 1.0 if priv_rate == 0 else unpriv_rate / priv_rate
+    spd = unpriv_rate - priv_rate
+
+    return {
+        'di': sanitize_number(di, fallback=1.0),
+        'spd': sanitize_number(spd, fallback=0.0),
+        'mean_difference': sanitize_number(spd, fallback=0.0),
+        'privileged_group': privileged['group'],
+        'unprivileged_group': unprivileged['group'],
+        'privileged_rate': priv_rate,
+        'unprivileged_rate': unpriv_rate,
+        'group_count': len(group_stats),
+        'groups': group_stats
+    }
+
+
 def sanitize_json_payload(value):
     if isinstance(value, dict):
         return {key: sanitize_json_payload(val) for key, val in value.items()}
@@ -120,12 +232,17 @@ def is_relevant_attribute(column_name: str, series: pd.Series) -> bool:
         'email', 'phone', 'mobile', 'contact', 'address', 'city',
         'employee_id', 'candidate_id', 'user_id', 'uuid', 'guid',
         'dob', 'timestamp', 'date', 'created_at', 'updated_at',
-        'comment', 'remarks', 'notes', 'description', 'resume', 'cv'
+        'comment', 'remarks', 'notes', 'description', 'resume', 'cv',
+        'stock', 'training', 'satisfaction', 'involvement', 'performance',
+        'relationship', 'worklife', 'overtime', 'travel', 'distance',
+        'hike', 'income', 'rate', 'standardhours', 'employeecount',
+        'employeenumber', 'yearswithcurrmanager', 'yearssincelastpromotion',
+        'yearsincurrentrole', 'yearsatcompany', 'totalworkingyears'
     }
     included_keywords = {
         'gender', 'sex', 'age', 'location', 'region', 'state', 'country',
         'degree', 'education', 'qualification', 'department', 'team',
-        'experience', 'tenure', 'salary', 'pay', 'race', 'ethnicity',
+        'experience', 'tenure', 'race', 'ethnicity',
         'marital', 'disability', 'veteran', 'role', 'designation'
     }
 
@@ -158,7 +275,7 @@ def is_relevant_attribute(column_name: str, series: pd.Series) -> bool:
     return 2 <= unique_count <= 10
 
 def run_smart_cleaning(df: pd.DataFrame):
-    """Fuzzy matching to find columns and identify all potential protected attributes"""
+    """Find outcome columns and prepare all comparable attributes for fairness analysis."""
     df.columns = df.columns.str.strip().str.lower()
     
     # Define variations of common HR column names
@@ -176,57 +293,29 @@ def run_smart_cleaning(df: pd.DataFrame):
         final_cols[target] = match
 
     # Identify additional protected attributes (columns that can be analyzed for bias)
-    protected_attributes = {}
-    
-    # Process known attributes
     clean = pd.DataFrame()
-    
-    # Gender (binary)
-    clean['gender_bin'] = df[final_cols['gender']].apply(lambda x: 1 if str(x).lower() in ['male', 'm', 'man'] else 0)
-    protected_attributes['gender'] = 'gender_bin'
-    
-    # Age (binary: >=30 vs <30)
-    clean['age_val'] = pd.to_numeric(df[final_cols['age']], errors='coerce').fillna(30)
-    clean['age_bin'] = clean['age_val'].apply(lambda x: 1 if x >= 30 else 0)
-    protected_attributes['age'] = 'age_bin'
-    
-    # Target variable (hired)
-    clean['target_bin'] = df[final_cols['hired']].apply(
-        lambda x: 1 if str(x).lower() in ['1', 'yes', 'true', 'hired', 'no'] else 0
-    )
-    
-    # Identify and process additional categorical columns for bias analysis
-    # Skip the already processed columns and the target column
-    processed_cols = {final_cols['gender'], final_cols['age'], final_cols['hired']}
-    
-    for col in df.columns:
-        if col not in processed_cols:
-            if not is_relevant_attribute(col, df[col]):
-                continue
+    clean['target_bin'] = df[final_cols['hired']].apply(encode_target_value)
 
-            # Check if column is suitable for bias analysis
-            unique_vals = df[col].dropna().unique()
-            
-            # Only analyze columns with reasonable number of categories (2-10)
-            if 2 <= len(unique_vals) <= 10:
-                try:
-                    # Try to convert to numeric or treat as categorical
-                    if pd.api.types.is_numeric_dtype(df[col]):
-                        # Numeric column - create binary (median split)
-                        median_val = df[col].median()
-                        bin_col = f"{col}_bin"
-                        clean[bin_col] = df[col].apply(lambda x: 1 if pd.notna(x) and x >= median_val else 0)
-                        protected_attributes[col] = bin_col
-                    else:
-                        # Categorical column - convert to binary (first category vs others)
-                        first_cat = str(unique_vals[0]).lower()
-                        bin_col = f"{col}_bin"
-                        clean[bin_col] = df[col].apply(lambda x: 1 if str(x).lower() == first_cat else 0)
-                        protected_attributes[col] = bin_col
-                except Exception as e:
-                    # Skip columns that can't be processed
-                    continue
-    
+    protected_attributes = {}
+    processed_cols = {final_cols['gender'], final_cols['age'], final_cols['hired']}
+
+    for col in df.columns:
+        if col in processed_cols or not is_relevant_attribute(col, df[col]):
+            continue
+
+        prepared = prepare_comparable_attribute(df[col])
+        if prepared is not None and prepared.nunique(dropna=True) >= 2:
+            clean[col] = prepared
+            protected_attributes[col] = col
+
+    for mandatory_attr in ('gender', 'age'):
+        source_col = final_cols[mandatory_attr]
+        if source_col not in clean.columns:
+            prepared = prepare_comparable_attribute(df[source_col])
+            if prepared is not None and prepared.nunique(dropna=True) >= 2:
+                clean[mandatory_attr] = prepared
+                protected_attributes[mandatory_attr] = mandatory_attr
+
     return clean, final_cols, protected_attributes
 
 # --- AUTH ROUTES ---
@@ -286,15 +375,6 @@ async def login(username: str = Form(...), password: str = Form(...)):
 @app.post("/audit")
 async def audit(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     try:
-        try:
-            from aif360.datasets import BinaryLabelDataset
-            from aif360.metrics import BinaryLabelDatasetMetric
-        except ImportError as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Audit dependencies are missing: {exc}"
-            )
-
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         
@@ -304,28 +384,19 @@ async def audit(file: UploadFile = File(...), token: str = Depends(oauth2_scheme
         # 1. Clean Data
         clean_df, mapped_info, protected_attributes = run_smart_cleaning(raw_df)
 
-        # 2. Local AIF360 Math - Analyze all protected attributes
+        # 2. Analyze all protected attributes
         results = {"metrics": {}, "mapped_columns": mapped_info, "protected_attributes": list(protected_attributes.keys())}
         
-        for attr_name, bin_col in protected_attributes.items():
-            try:
-                ds = BinaryLabelDataset(df=clean_df[[bin_col, 'target_bin']], label_names=['target_bin'], 
-                                         protected_attribute_names=[bin_col], favorable_label=1, unfavorable_label=0)
-                metric = BinaryLabelDatasetMetric(ds, unprivileged_groups=[{bin_col: 0}], privileged_groups=[{bin_col: 1}])
-                results["metrics"][attr_name] = {
-                    "di": sanitize_number(metric.disparate_impact(), fallback=1.0),
-                    "spd": sanitize_number(metric.statistical_parity_difference(), fallback=0.0)
-                }
-            except Exception as e:
-                # Skip attributes that can't be analyzed
-                results["metrics"][attr_name] = {
-                    "di": 1.0,
-                    "spd": 0.0,
-                    "error": f"Could not analyze: {str(e)}"
-                }
+        for attr_name, comparable_col in protected_attributes.items():
+            metric_payload = compute_group_fairness(clean_df[comparable_col], clean_df['target_bin'])
+            if metric_payload is not None:
+                results["metrics"][attr_name] = metric_payload
 
         # 3. Gemini Agent Insight
-        prompt = f"Explain these HR bias metrics: {json.dumps(results['metrics'])}. Identify the bias and give 1 fix. Max 45 words."
+        prompt = (
+            f"Explain these HR bias metrics: {json.dumps(results['metrics'])}. "
+            "Identify the biggest risk, mention the most affected attribute, and give one practical fix in under 70 words."
+        )
         try:
             from google import genai
 
@@ -341,14 +412,15 @@ async def audit(file: UploadFile = File(...), token: str = Depends(oauth2_scheme
         if username not in user_history:
             user_history[username] = []
         
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
         history_entry = {
             "id": len(user_history[username]) + 1,
             "timestamp": timestamp,
             "filename": file.filename,
             "metrics": results["metrics"],
             "insight": results["insight"],
-            "mapped_columns": results["mapped_columns"]
+            "mapped_columns": results["mapped_columns"],
+            "protected_attributes": results["protected_attributes"]
         }
         
         # Save to in-memory cache
@@ -360,10 +432,10 @@ async def audit(file: UploadFile = File(...), token: str = Depends(oauth2_scheme
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO analysis_history 
-                   (username, timestamp, filename, metrics, insight, mapped_columns) 
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                   (username, timestamp, filename, metrics, insight, mapped_columns, protected_attributes) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (username, timestamp, file.filename, json.dumps(results["metrics"]), 
-                 results["insight"], json.dumps(results["mapped_columns"]))
+                 results["insight"], json.dumps(results["mapped_columns"]), json.dumps(results["protected_attributes"]))
             )
             conn.commit()
             conn.close()
@@ -389,7 +461,7 @@ async def get_history(token: str = Depends(oauth2_scheme)):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT timestamp, filename, metrics, insight, mapped_columns 
+            """SELECT timestamp, filename, metrics, insight, mapped_columns, protected_attributes 
                FROM analysis_history WHERE username = ? ORDER BY timestamp DESC""",
             (username,)
         )
@@ -398,14 +470,15 @@ async def get_history(token: str = Depends(oauth2_scheme)):
         
         # Build history list from database
         history = []
-        for idx, (timestamp, filename, metrics_json, insight, mapped_json) in enumerate(rows, 1):
+        for idx, (timestamp, filename, metrics_json, insight, mapped_json, protected_json) in enumerate(rows, 1):
             history.append({
                 "id": idx,
                 "timestamp": timestamp,
                 "filename": filename,
                 "metrics": sanitize_json_payload(json.loads(metrics_json)),
                 "insight": insight,
-                "mapped_columns": json.loads(mapped_json)
+                "mapped_columns": json.loads(mapped_json),
+                "protected_attributes": json.loads(protected_json) if protected_json else list(json.loads(metrics_json).keys())
             })
         
         # Cache in memory for future requests

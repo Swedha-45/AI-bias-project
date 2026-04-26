@@ -21,8 +21,7 @@ AI Bias Auditor is a FastAPI-based web app for uploading hiring datasets, checki
 - [chart.js](/d:/Projects/AI-Bais/chart.js) - local Chart.js bundle
 - [requirements.txt](/d:/Projects/AI-Bais/requirements.txt) - Python dependencies
 - [CSV_FORMAT.md](/d:/Projects/AI-Bais/CSV_FORMAT.md) - **CSV upload format and column requirements guide**
-- [CSV_TEMPLATE.csv](/d:/Projects/AI-Bais/CSV_TEMPLATE.csv) - **Template CSV file for data upload**
-
+- [CSV_TEMPLATE.csv](/d:/Projects/AI-Bais/CSV_TEMPLATE.csv) - **Template CSV file for data upload**- [RENDER_DEPLOYMENT.md](/d:/Projects/AI-Bais/RENDER_DEPLOYMENT.md) - **Complete deployment guide for Render**
 ## Setup
 
 1. Create and activate a virtual environment.
@@ -52,6 +51,18 @@ python app.py
 - `history.html`
 
 The frontend is expected to run on `http://127.0.0.1:5500` and the backend on `http://127.0.0.1:8000`.
+
+## Deployment
+
+For production deployment to Render, see **[RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)** for complete instructions.
+
+**Quick Deploy:**
+1. Push code to GitHub
+2. Create Render Web Service with:
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+3. Add environment variables: `GOOGLE_API_KEY`, `SECRET_KEY`
+4. Deploy frontend separately to Vercel/Netlify
 
 ## CSV Data Format
 

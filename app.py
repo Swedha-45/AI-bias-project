@@ -20,7 +20,7 @@ if load_dotenv is not None:
     load_dotenv()
 
 # Security Setup
-SECRET_KEY = "JEC_ENGINEERING_SECRET"
+SECRET_KEY = os.getenv("SECRET_KEY", "JEC_ENGINEERING_SECRET")
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -70,6 +70,8 @@ app.add_middleware(
     allow_origins=[
         "http://127.0.0.1:5500",
         "http://localhost:5500",
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),  # For deployed frontend
+        "*",  # Allow all origins for development (restrict in production)
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -499,4 +501,5 @@ async def get_history(token: str = Depends(oauth2_scheme)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
